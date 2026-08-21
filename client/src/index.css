@@ -1,0 +1,69 @@
+/* Design: Warm Code Studio — charcoal foundation, Flutter blue utility accents, Studio Amber action cues. */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-plex: "IBM Plex Sans Arabic", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+:root {
+  --background: oklch(0.15 0.009 250);
+  --foreground: oklch(0.96 0.006 80);
+  --card: oklch(0.19 0.008 250);
+  --card-foreground: oklch(0.96 0.006 80);
+  --primary: oklch(0.73 0.14 230);
+  --primary-foreground: oklch(0.14 0.015 230);
+  --secondary: oklch(0.23 0.01 250);
+  --secondary-foreground: oklch(0.88 0.008 250);
+  --muted: oklch(0.24 0.008 250);
+  --muted-foreground: oklch(0.68 0.014 250);
+  --accent: oklch(0.78 0.12 70);
+  --accent-foreground: oklch(0.18 0.02 70);
+  --border: oklch(1 0 0 / 12%);
+  --ring: oklch(0.73 0.14 230);
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: #111315;
+    color: #F8F4EE;
+    font-family: "Tajawal", sans-serif;
+  }
+  ::selection { background: rgba(71, 184, 255, 0.35); color: #fff; }
+}
+
+.studio-noise {
+  background-image: radial-gradient(rgba(242,160,75,0.07) 1px, transparent 1px), linear-gradient(120deg, rgba(71,184,255,0.04), transparent 45%);
+  background-size: 18px 18px, 100% 100%;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a, button { transition: color 180ms cubic-bezier(0.23, 1, 0.32, 1), background-color 180ms cubic-bezier(0.23, 1, 0.32, 1), border-color 180ms cubic-bezier(0.23, 1, 0.32, 1), transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
+}
