@@ -1,9 +1,14 @@
 from django.contrib import admin
-from .models import Currency, Customer, Transaction
+from .models import Currency, Customer, Transaction, UserProfile
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "role", "branch_name")
+    list_filter = ("role", "branch_name")
 
 @admin.register(Currency)
 class CurrencyAdmin(admin.ModelAdmin):
-    list_display = ("code", "name_ar", "buy_rate", "sell_rate", "is_active")
+    list_display = ("code", "name_ar", "buy_rate", "sell_rate", "is_active", "updated_at")
     list_editable = ("buy_rate", "sell_rate", "is_active")
 
 @admin.register(Customer)
@@ -13,7 +18,7 @@ class CustomerAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ("reference", "customer", "currency", "transaction_type", "foreign_amount", "local_amount", "status", "created_at")
+    list_display = ("reference", "customer", "currency", "transaction_type", "foreign_amount", "local_amount", "status", "created_by", "created_at")
     list_filter = ("transaction_type", "status", "currency")
     search_fields = ("reference", "customer__name")
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "created_by")

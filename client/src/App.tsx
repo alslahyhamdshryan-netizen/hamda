@@ -1,29 +1,18 @@
-import { useState } from "react";
-import { Bell, ChevronDown, CircleDollarSign, FileBarChart2, LayoutDashboard, LogOut, Menu, Settings, Users, WalletCards, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, ChevronDown, CircleDollarSign, FileBarChart2, KeyRound, LayoutDashboard, LogIn, LogOut, Menu, Settings, Users, WalletCards, X } from "lucide-react";
 import Home from "@/pages/Home";
+import { authApi, type SessionUser } from "@/lib/api";
+
+function Login({ onLogin }: { onLogin: (user: SessionUser) => void }) {
+  const [username, setUsername] = useState(""); const [password, setPassword] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const submit = async (e: React.FormEvent) => { e.preventDefault(); setLoading(true); setError(""); try { const result = await authApi.login(username, password); onLogin(result.user); } catch (err) { setError(err instanceof Error ? err.message : "تعذر تسجيل الدخول"); } finally { setLoading(false); } };
+  return <div className="login-screen" dir="rtl"><div className="login-card"><div className="brand-mark">ص</div><h1>مرحبًا بك في صَرافة</h1><p>سجّل الدخول للوصول إلى لوحة إدارة الصندوق</p><form onSubmit={submit}><label>اسم المستخدم<input value={username} onChange={e => setUsername(e.target.value)} placeholder="أدخل اسم المستخدم" autoComplete="username" required /></label><label>كلمة المرور<div className="password-field"><KeyRound size={15}/><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="أدخل كلمة المرور" autoComplete="current-password" required /></div></label>{error && <div className="login-error">{error}</div>}<button className="primary-button full" disabled={loading}>{loading ? "جارٍ التحقق..." : "تسجيل الدخول"}<LogIn size={17}/></button></form><small>يتم التحكم بالصلاحيات من لوحة Django Admin</small></div></div>
+}
 
 export default function App() {
-  const [active, setActive] = useState("الرئيسية");
-  const [open, setOpen] = useState(false);
-  const items = [
-    ["الرئيسية", LayoutDashboard],
-    ["العمليات", WalletCards],
-    ["العملاء", Users],
-    ["الأسعار", CircleDollarSign],
-    ["التقارير", FileBarChart2],
-  ] as const;
-  return (
-    <div className="app-shell" dir="rtl">
-      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
-        <div className="brand"><div className="brand-mark">ص</div><div><strong>صَرافة</strong><span>نظام إدارة الصراف</span></div><button className="mobile-close" onClick={() => setOpen(false)}><X size={18}/></button></div>
-        <div className="branch-card"><span className="status-dot"/> فرع السوق المركزي <ChevronDown size={14}/></div>
-        <nav>{items.map(([label, Icon]) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => { setActive(label); setOpen(false); }}><Icon size={18}/><span>{label}</span>{label === "العمليات" && <b>3</b>}</button>)}</nav>
-        <div className="nav-bottom"><button className="nav-item"><Settings size={18}/><span>الإعدادات</span></button><button className="nav-item"><LogOut size={18}/><span>تسجيل الخروج</span></button></div>
-      </aside>
-      <main className="main-content">
-        <header className="topbar"><button className="mobile-menu" onClick={() => setOpen(true)}><Menu size={21}/></button><div><p className="eyebrow">الخميس، ٢٧ أغسطس ٢٠٢٦</p><h1>{active}</h1></div><div className="top-actions"><button className="icon-button notification"><Bell size={19}/><i/></button><div className="user-menu"><div className="avatar">م</div><div className="user-name"><strong>محمد أحمد</strong><span>أمين الصندوق</span></div><ChevronDown size={16}/></div></div></header>
-        <Home />
-      </main>
-    </div>
-  );
+  const [user, setUser] = useState<SessionUser | null>(null); const [checking, setChecking] = useState(true); const [active, setActive] = useState("الرئيسية"); const [open, setOpen] = useState(false);
+  useEffect(() => { authApi.me().then(r => setUser(r.user)).catch(() => {}).finally(() => setChecking(false)); }, []);
+  if (checking) return <div className="loading-screen">جارٍ تحميل النظام...</div>; if (!user) return <Login onLogin={setUser} />;
+  const items = [["الرئيسية", LayoutDashboard], ["العمليات", WalletCards], ["العملاء", Users], ["الأسعار", CircleDollarSign], ["التقارير", FileBarChart2]] as const;
+  return <div className="app-shell" dir="rtl"><aside className={`sidebar ${open ? "sidebar-open" : ""}`}><div className="brand"><div className="brand-mark">ص</div><div><strong>صَرافة</strong><span>نظام إدارة الصراف</span></div><button className="mobile-close" onClick={() => setOpen(false)}><X size={18}/></button></div><div className="branch-card"><span className="status-dot"/> {user.branch} <ChevronDown size={14}/></div><nav>{items.map(([label, Icon]) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => { setActive(label); setOpen(false); }}><Icon size={18}/><span>{label}</span>{label === "العمليات" && <b>3</b>}</button>)}</nav><div className="nav-bottom"><button className="nav-item"><Settings size={18}/><span>الإعدادات</span></button><button className="nav-item" onClick={() => authApi.logout().then(() => setUser(null))}><LogOut size={18}/><span>تسجيل الخروج</span></button></div></aside><main className="main-content"><header className="topbar"><button className="mobile-menu" onClick={() => setOpen(true)}><Menu size={21}/></button><div><p className="eyebrow">الخميس، ٢٧ أغسطس ٢٠٢٦</p><h1>{active}</h1></div><div className="top-actions"><button className="icon-button notification"><Bell size={19}/><i/></button><div className="user-menu"><div className="avatar">{user.name.charAt(0)}</div><div className="user-name"><strong>{user.name}</strong><span>{user.role_label}</span></div><ChevronDown size={16}/></div></div></header><Home /></main></div>;
 }
