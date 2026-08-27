@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from .models import Currency, Customer, Transaction, UserProfile
@@ -15,6 +15,9 @@ def user_payload(user):
 
 def api_error(message, status=400):
     return JsonResponse({"error": message}, status=status)
+
+def home_view(request):
+    return HttpResponseRedirect("/admin/")
 
 @ensure_csrf_cookie
 def csrf_view(request):
