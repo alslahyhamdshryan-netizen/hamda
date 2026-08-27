@@ -1,46 +1,29 @@
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-import VideoDetail from "./pages/VideoDetail";
+import { useState } from "react";
+import { Bell, ChevronDown, CircleDollarSign, FileBarChart2, LayoutDashboard, LogOut, Menu, Settings, Users, WalletCards, X } from "lucide-react";
+import Home from "@/pages/Home";
 
-/** Design: Warm Code Studio — the site is intentionally dark to frame video and code content. */
-
-
-function Router() {
+export default function App() {
+  const [active, setActive] = useState("الرئيسية");
+  const [open, setOpen] = useState(false);
+  const items = [
+    ["الرئيسية", LayoutDashboard],
+    ["العمليات", WalletCards],
+    ["العملاء", Users],
+    ["الأسعار", CircleDollarSign],
+    ["التقارير", FileBarChart2],
+  ] as const;
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/videos/:id"} component={VideoDetail} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <div className="app-shell" dir="rtl">
+      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
+        <div className="brand"><div className="brand-mark">ص</div><div><strong>صَرافة</strong><span>نظام إدارة الصراف</span></div><button className="mobile-close" onClick={() => setOpen(false)}><X size={18}/></button></div>
+        <div className="branch-card"><span className="status-dot"/> فرع السوق المركزي <ChevronDown size={14}/></div>
+        <nav>{items.map(([label, Icon]) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => { setActive(label); setOpen(false); }}><Icon size={18}/><span>{label}</span>{label === "العمليات" && <b>3</b>}</button>)}</nav>
+        <div className="nav-bottom"><button className="nav-item"><Settings size={18}/><span>الإعدادات</span></button><button className="nav-item"><LogOut size={18}/><span>تسجيل الخروج</span></button></div>
+      </aside>
+      <main className="main-content">
+        <header className="topbar"><button className="mobile-menu" onClick={() => setOpen(true)}><Menu size={21}/></button><div><p className="eyebrow">الخميس، ٢٧ أغسطس ٢٠٢٦</p><h1>{active}</h1></div><div className="top-actions"><button className="icon-button notification"><Bell size={19}/><i/></button><div className="user-menu"><div className="avatar">م</div><div className="user-name"><strong>محمد أحمد</strong><span>أمين الصندوق</span></div><ChevronDown size={16}/></div></div></header>
+        <Home />
+      </main>
+    </div>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="dark"
-        // switchable
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  );
-}
-
-export default App;
