@@ -89,3 +89,22 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUSES, default=TODO)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class PerformanceReview(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="performance_reviews")
+    reviewer = models.ForeignKey(User, on_delete=models.PROTECT)
+    review_date = models.DateField()
+    score = models.PositiveIntegerField(default=1)
+    strengths = models.TextField(blank=True)
+    goals = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    class Meta: ordering = ["-review_date"]
+
+class EmployeeDocument(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="documents")
+    title = models.CharField(max_length=160)
+    document_type = models.CharField(max_length=80, default="وثيقة موظف")
+    file = models.FileField(upload_to="employee_documents/", blank=True)
+    expiry_date = models.DateField(null=True, blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    uploaded_at = models.DateTimeField(auto_now_add=True)

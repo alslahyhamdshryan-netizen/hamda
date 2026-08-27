@@ -70,3 +70,31 @@ def leave_decision_view(request, pk):
     if decision not in (LeaveRequest.APPROVED, LeaveRequest.REJECTED): return api_error("القرار غير صالح")
     leave.status = decision; leave.approved_by = request.user; leave.save(update_fields=["status", "approved_by"])
     return JsonResponse({"ok": True})
+
+@login_required
+def report_daily_view(request):
+    if not can_manage(request.user): return api_error("التقارير متاحة للإدارة فقط", 403)
+    date_text = request.GET.get("date") or str(timezone.localdate())
+    from datetime import date
+    try: report_date = date.fromisoformat(date_text)
+    except ValueError: return api_error("التاريخ غير صحيح")
+    attendance = Attendance.objects.filter(date=report_date)
+    payroll = Payroll.objects.filter(month__year=report_date.year, month__month=report_date.month)
+    return JsonResponse({"date": str(report_date), "employees": Employee.objects.count(), "attendance": {"present": attendance.filter(status="present").count(), "absent": attendance.filter(status="absent").count(), "late": attendance.filter(status="late").count()}, "leave_requests": LeaveRequest.objects.filter(created_at__date=report_date).count(), "payroll_total": str(payroll.aggregate(v=Sum("net_salary"))["v"] or 0), "tasks_done": Task.objects.filter(status=Task.DONE, created_at__date=report_date).count()})
+
+@login_required
+@require_http_methods(["POST"])
+def attendance_create_view(request):
+    try: data = json.loads(request.body or "{}")
+    except json.JSONDecodeError: return api_error("بيانات الحضور غير صالحة")
+    if not data.get("employee_id"): return api_error("الموظف مطلوب")
+    record, _ = Attendance.objects.update_or_create(employee_id=data["employee_id"], date=data.get("date", timezone.localdate()), defaults={"status": data.get("status", "present"), "check_in": data.get("check_in"), "check_out": data.get("check_out"), "notes": data.get("notes", "")})
+    return JsonResponse({"ok": True, "id": record.id}, status=201)
+
+@login_required
+@require_http_methods(["POST"])
+def leave_create_view(request):
+    try: data = json.loads(request.body or "{}")
+    except json.JSONDecodeError: return api_error("بيانات الإجازة غير صالحة")
+    leave = LeaveRequest.objects.create(employee_id=data.get("employee_id"), leave_type=data.get("leave_type", "إجازة سنوية"), start_date=data["start_date"], end_date=data["end_date"], reason=data.get("reason", ""))
+    return JsonResponse({"ok": True, "id": leave.id}, status=201)

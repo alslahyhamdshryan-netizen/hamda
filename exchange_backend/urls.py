@@ -6,7 +6,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", views.frontend_view),
     path("api/auth/csrf/", views.csrf_view), path("api/auth/login/", views.login_view), path("api/auth/me/", views.me_view), path("api/auth/logout/", views.logout_view),
-    path("api/dashboard/", views.dashboard_view), path("api/employees/", views.employee_create_view), path("api/leaves/<int:pk>/decision/", views.leave_decision_view),
+    path("api/dashboard/", views.dashboard_view), path("api/reports/daily/", views.report_daily_view), path("api/employees/", views.employee_create_view), path("api/attendance/", views.attendance_create_view), path("api/leaves/", views.leave_create_view), path("api/leaves/<int:pk>/decision/", views.leave_decision_view),
     re_path(r"^assets/(?P<path>.*)$", views.frontend_asset),
     re_path(r"^(?P<path>.*)$", views.frontend_view),
 ]

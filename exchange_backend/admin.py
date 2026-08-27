@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Attendance, Department, Employee, LeaveRequest, Payroll, Task, UserProfile
+from .models import Attendance, Department, Employee, EmployeeDocument, LeaveRequest, Payroll, PerformanceReview, Task, UserProfile
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin): list_display = ("user", "role", "branch_name", "phone"); list_filter = ("role",)
@@ -15,3 +15,7 @@ class LeaveRequestAdmin(admin.ModelAdmin): list_display = ("employee", "leave_ty
 class PayrollAdmin(admin.ModelAdmin): list_display = ("employee", "month", "basic_salary", "allowances", "deductions", "net_salary", "paid"); list_filter = ("month", "paid")
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin): list_display = ("title", "assigned_to", "due_date", "status", "created_by"); list_filter = ("status",)
+@admin.register(PerformanceReview)
+class PerformanceReviewAdmin(admin.ModelAdmin): list_display = ("employee", "reviewer", "review_date", "score"); list_filter = ("score", "review_date")
+@admin.register(EmployeeDocument)
+class EmployeeDocumentAdmin(admin.ModelAdmin): list_display = ("employee", "title", "document_type", "expiry_date", "uploaded_at"); list_filter = ("document_type",)
