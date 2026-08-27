@@ -2,7 +2,9 @@ import json
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import FileResponse, JsonResponse, HttpResponseRedirect
+from pathlib import Path
+from django.conf import settings
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
@@ -13,6 +15,16 @@ def user_payload(user):
     return {"id": user.id, "username": user.username, "name": user.get_full_name() or user.username, "role": profile.role, "role_label": profile.get_role_display(), "branch": profile.branch_name}
 def api_error(message, status=400): return JsonResponse({"error": message}, status=status)
 def home_view(request): return HttpResponseRedirect("/admin/")
+
+def frontend_view(request, path=""):
+    index = Path(settings.BASE_DIR) / "dist" / "public" / "index.html"
+    if index.exists():
+        return FileResponse(index.open("rb"), content_type="text/html")
+    return HttpResponseRedirect("/admin/")
+
+def frontend_asset(request, path):
+    from django.views.static import serve
+    return serve(request, path, document_root=str(Path(settings.BASE_DIR) / "dist" / "public" / "assets"))
 @ensure_csrf_cookie
 def csrf_view(request): return JsonResponse({"ok": True})
 @require_http_methods(["POST"])
