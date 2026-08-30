@@ -108,3 +108,75 @@ class EmployeeDocument(models.Model):
     expiry_date = models.DateField(null=True, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+
+
+# Construction control domain
+class ConstructionClient(models.Model):
+    organization_name = models.CharField(max_length=180)
+    contact_name = models.CharField(max_length=160, blank=True)
+    phone = models.CharField(max_length=40, blank=True)
+    email = models.EmailField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self): return self.organization_name
+
+class ConstructionProject(models.Model):
+    PLANNING = "planning"; ACTIVE = "active"; ON_HOLD = "on_hold"; COMPLETE = "complete"
+    STATUSES = [(PLANNING,"تخطيط"),(ACTIVE,"نشط"),(ON_HOLD,"متوقف"),(COMPLETE,"مكتمل")]
+    code = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=220)
+    client = models.ForeignKey(ConstructionClient, on_delete=models.PROTECT, related_name="projects")
+    location = models.CharField(max_length=220)
+    manager = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="construction_projects")
+    contract_value = models.DecimalField(max_digits=16, decimal_places=2, default=0)
+    budget = models.DecimalField(max_digits=16, decimal_places=2, default=0)
+    actual_cost = models.DecimalField(max_digits=16, decimal_places=2, default=0)
+    progress = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    planned_progress = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUSES, default=PLANNING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    def __str__(self): return f"{self.code} — {self.name}"
+
+class ProjectCostTransaction(models.Model):
+    project = models.ForeignKey(ConstructionProject, on_delete=models.PROTECT, related_name="cost_transactions")
+    category = models.CharField(max_length=80)
+    description = models.CharField(max_length=240)
+    amount = models.DecimalField(max_digits=16, decimal_places=2)
+    transaction_date = models.DateField()
+    source_type = models.CharField(max_length=60, default="expense")
+    reference = models.CharField(max_length=80, blank=True)
+    created_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class ProjectTask(models.Model):
+    TODO = "todo"; PROGRESS = "progress"; DONE = "done"; BLOCKED = "blocked"
+    STATUSES = [(TODO,"لم تبدأ"),(PROGRESS,"قيد التنفيذ"),(DONE,"مكتملة"),(BLOCKED,"متعثرة")]
+    project = models.ForeignKey(ConstructionProject, on_delete=models.CASCADE, related_name="project_tasks")
+    name = models.CharField(max_length=220)
+    phase = models.CharField(max_length=120)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    progress = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUSES, default=TODO)
+    is_critical = models.BooleanField(default=False)
+
+class ConstructionIssue(models.Model):
+    OPEN = "open"; PROGRESS = "progress"; CLOSED = "closed"
+    STATUSES = [(OPEN,"مفتوحة"),(PROGRESS,"قيد المعالجة"),(CLOSED,"مغلقة")]
+    project = models.ForeignKey(ConstructionProject, on_delete=models.CASCADE, related_name="issues")
+    title = models.CharField(max_length=220)
+    issue_type = models.CharField(max_length=80, default="مخاطر")
+    priority = models.CharField(max_length=20, default="medium")
+    status = models.CharField(max_length=20, choices=STATUSES, default=OPEN)
+    due_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class AuditEvent(models.Model):
+    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=120)
+    entity = models.CharField(max_length=120)
+    entity_id = models.CharField(max_length=80, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    class Meta: ordering = ["-created_at"]

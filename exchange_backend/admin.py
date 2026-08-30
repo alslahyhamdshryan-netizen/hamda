@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Attendance, Department, Employee, EmployeeDocument, LeaveRequest, Payroll, PerformanceReview, Task, UserProfile
+from .models import Attendance, Department, Employee, EmployeeDocument, LeaveRequest, Payroll, PerformanceReview, Task, UserProfile, ConstructionClient, ConstructionProject, ProjectCostTransaction, ProjectTask, ConstructionIssue, AuditEvent
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin): list_display = ("user", "role", "branch_name", "phone"); list_filter = ("role",)
@@ -19,3 +19,16 @@ class TaskAdmin(admin.ModelAdmin): list_display = ("title", "assigned_to", "due_
 class PerformanceReviewAdmin(admin.ModelAdmin): list_display = ("employee", "reviewer", "review_date", "score"); list_filter = ("score", "review_date")
 @admin.register(EmployeeDocument)
 class EmployeeDocumentAdmin(admin.ModelAdmin): list_display = ("employee", "title", "document_type", "expiry_date", "uploaded_at"); list_filter = ("document_type",)
+
+@admin.register(ConstructionClient)
+class ConstructionClientAdmin(admin.ModelAdmin): list_display = ("organization_name", "contact_name", "phone", "created_at"); search_fields = ("organization_name", "contact_name")
+@admin.register(ConstructionProject)
+class ConstructionProjectAdmin(admin.ModelAdmin): list_display = ("code", "name", "client", "status", "progress", "contract_value", "actual_cost"); list_filter = ("status",); search_fields = ("code", "name", "location")
+@admin.register(ProjectCostTransaction)
+class ProjectCostTransactionAdmin(admin.ModelAdmin): list_display = ("project", "category", "description", "amount", "transaction_date", "source_type"); list_filter = ("category", "source_type")
+@admin.register(ProjectTask)
+class ProjectTaskAdmin(admin.ModelAdmin): list_display = ("project", "name", "phase", "progress", "status", "is_critical"); list_filter = ("status", "is_critical", "phase")
+@admin.register(ConstructionIssue)
+class ConstructionIssueAdmin(admin.ModelAdmin): list_display = ("project", "title", "issue_type", "priority", "status", "due_date"); list_filter = ("issue_type", "priority", "status")
+@admin.register(AuditEvent)
+class AuditEventAdmin(admin.ModelAdmin): list_display = ("user", "action", "entity", "entity_id", "created_at"); readonly_fields = ("user", "action", "entity", "entity_id", "metadata", "created_at")

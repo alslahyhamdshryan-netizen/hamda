@@ -41,3 +41,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Python/Django local state
+__pycache__/
+*.sqlite3
+media/
+
+# Node/build artifacts
+node_modules/
+dist/

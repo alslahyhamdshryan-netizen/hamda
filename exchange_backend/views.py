@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
-from .models import Attendance, Department, Employee, LeaveRequest, Payroll, Task, UserProfile
+from .models import Attendance, Department, Employee, LeaveRequest, Payroll, Task, UserProfile, ConstructionProject, ProjectTask, ConstructionIssue
 
 def user_payload(user):
     profile, _ = UserProfile.objects.get_or_create(user=user)
@@ -49,6 +49,20 @@ def dashboard_view(request):
     present = Attendance.objects.filter(date=today, status=Attendance.PRESENT).count()
     recent = employees.order_by("-created_at")[:8]
     return JsonResponse({"stats": {"employees": employees.count(), "active": active, "present": present, "pending_leaves": pending_leaves}, "departments": list(Department.objects.annotate(total=Count("employees")).values("name", "code", "total")), "employees": [{"id": e.id, "number": e.employee_number, "name": e.full_name, "title": e.job_title, "department": e.department.name, "status": e.get_status_display(), "email": e.email, "phone": e.phone, "hire_date": e.hire_date.isoformat()} for e in recent], "leave_requests": list(LeaveRequest.objects.select_related("employee").filter(status=LeaveRequest.PENDING).values("id", "employee__full_name", "leave_type", "start_date", "end_date", "status")[:6] ), "payroll_total": str(Payroll.objects.filter(month__month=today.month, month__year=today.year).aggregate(v=Sum("net_salary"))["v"] or 0)})
+
+@login_required
+def construction_dashboard_view(request):
+    projects = ConstructionProject.objects.select_related("client").all()
+    total_contract = projects.aggregate(v=Sum("contract_value"))["v"] or 0
+    total_budget = projects.aggregate(v=Sum("budget"))["v"] or 0
+    total_actual = projects.aggregate(v=Sum("actual_cost"))["v"] or 0
+    tasks = ProjectTask.objects.select_related("project").filter(status__in=[ProjectTask.PROGRESS, ProjectTask.BLOCKED]).order_by("end_date")[:6]
+    return JsonResponse({
+        "stats": {"projects": projects.count(), "active": projects.filter(status=ConstructionProject.ACTIVE).count(), "delayed": projects.filter(status=ConstructionProject.ON_HOLD).count(), "open_issues": ConstructionIssue.objects.exclude(status=ConstructionIssue.CLOSED).count(), "contract_value": str(total_contract), "budget": str(total_budget), "actual_cost": str(total_actual), "forecast_profit": str(total_contract - total_actual)},
+        "projects": [{"id": p.id, "code": p.code, "name": p.name, "client": p.client.organization_name, "location": p.location, "status": p.get_status_display(), "progress": float(p.progress), "planned_progress": float(p.planned_progress), "contract_value": str(p.contract_value), "budget": str(p.budget), "actual_cost": str(p.actual_cost), "end_date": p.end_date.isoformat() if p.end_date else None} for p in projects.order_by("-created_at")[:8]],
+        "tasks": [{"id": t.id, "project": t.project.code, "name": t.name, "phase": t.phase, "progress": float(t.progress), "status": t.get_status_display(), "critical": t.is_critical, "end_date": t.end_date.isoformat() if t.end_date else None} for t in tasks],
+        "issues": list(ConstructionIssue.objects.select_related("project").exclude(status=ConstructionIssue.CLOSED).values("id", "project__code", "title", "issue_type", "priority", "status", "due_date")[:8])
+    })
 @login_required
 @require_http_methods(["POST"])
 def employee_create_view(request):
