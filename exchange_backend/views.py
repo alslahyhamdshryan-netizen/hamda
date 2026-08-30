@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
-from .models import Attendance, Department, Employee, LeaveRequest, Payroll, Task, UserProfile, ConstructionProject, ProjectTask, ConstructionIssue
+from .models import Attendance, Department, Employee, LeaveRequest, Payroll, Task, UserProfile, ConstructionClient, ConstructionProject, ProjectCostTransaction, ProjectTask, ConstructionIssue, AuditEvent
 
 def user_payload(user):
     profile, _ = UserProfile.objects.get_or_create(user=user)
@@ -63,6 +63,44 @@ def construction_dashboard_view(request):
         "tasks": [{"id": t.id, "project": t.project.code, "name": t.name, "phase": t.phase, "progress": float(t.progress), "status": t.get_status_display(), "critical": t.is_critical, "end_date": t.end_date.isoformat() if t.end_date else None} for t in tasks],
         "issues": list(ConstructionIssue.objects.select_related("project").exclude(status=ConstructionIssue.CLOSED).values("id", "project__code", "title", "issue_type", "priority", "status", "due_date")[:8])
     })
+
+@login_required
+@require_http_methods(["POST"])
+def construction_project_create_view(request):
+    if not can_manage(request.user): return api_error("لا تملك صلاحية إنشاء مشروع", 403)
+    try: data = json.loads(request.body or "{}")
+    except json.JSONDecodeError: return api_error("بيانات المشروع غير صالحة")
+    required = ["code", "name", "client", "location", "contract_value", "budget"]
+    if any(not data.get(k) for k in required): return api_error("أكمل بيانات المشروع الأساسية")
+    client, _ = ConstructionClient.objects.get_or_create(organization_name=data["client"])
+    project = ConstructionProject.objects.create(code=data["code"], name=data["name"], client=client, location=data["location"], manager=request.user, contract_value=data["contract_value"], budget=data["budget"], start_date=data.get("start_date") or None, end_date=data.get("end_date") or None, status=ConstructionProject.PLANNING)
+    AuditEvent.objects.create(user=request.user, action="create", entity="ConstructionProject", entity_id=str(project.id), metadata={"code": project.code})
+    return JsonResponse({"ok": True, "id": project.id, "code": project.code}, status=201)
+
+@login_required
+@require_http_methods(["POST"])
+def construction_cost_create_view(request):
+    if not can_manage(request.user): return api_error("لا تملك صلاحية تسجيل تكلفة", 403)
+    try: data = json.loads(request.body or "{}")
+    except json.JSONDecodeError: return api_error("بيانات التكلفة غير صالحة")
+    if not all(data.get(k) for k in ["project_id", "category", "description", "amount"]): return api_error("أكمل بيانات التكلفة")
+    project = ConstructionProject.objects.get(pk=data["project_id"])
+    cost = ProjectCostTransaction.objects.create(project=project, category=data["category"], description=data["description"], amount=data["amount"], transaction_date=data.get("transaction_date") or timezone.localdate(), source_type=data.get("source_type", "expense"), reference=data.get("reference", ""), created_by=request.user)
+    project.actual_cost = project.actual_cost + cost.amount
+    project.save(update_fields=["actual_cost"])
+    AuditEvent.objects.create(user=request.user, action="post_cost", entity="ProjectCostTransaction", entity_id=str(cost.id), metadata={"project": project.code, "amount": str(cost.amount)})
+    return JsonResponse({"ok": True, "id": cost.id, "actual_cost": str(project.actual_cost)}, status=201)
+
+@login_required
+@require_http_methods(["POST"])
+def construction_issue_create_view(request):
+    if not can_manage(request.user): return api_error("لا تملك صلاحية تسجيل إنذار", 403)
+    try: data = json.loads(request.body or "{}")
+    except json.JSONDecodeError: return api_error("بيانات الإنذار غير صالحة")
+    if not all(data.get(k) for k in ["project_id", "title"]): return api_error("المشروع وعنوان الإنذار مطلوبان")
+    issue = ConstructionIssue.objects.create(project_id=data["project_id"], title=data["title"], issue_type=data.get("issue_type", "مخاطر"), priority=data.get("priority", "medium"), due_date=data.get("due_date") or None)
+    AuditEvent.objects.create(user=request.user, action="create", entity="ConstructionIssue", entity_id=str(issue.id), metadata={"title": issue.title})
+    return JsonResponse({"ok": True, "id": issue.id}, status=201)
 @login_required
 @require_http_methods(["POST"])
 def employee_create_view(request):
